@@ -1,0 +1,88 @@
+services:
+  academia-api:
+    image: academia-api
+    build:
+      context: ./AcademiaAPI
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/academia
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+      JWT_SECRET: secret
+      MONGO_API_URL: http://academia-mongo-api:8081/api/
+      GRPC_SERVER_HOST: grpc
+      GRPC_SERVER_PORT: 9090
+    networks:
+      - academia-network
+
+  academia-mongo-api:
+    image: academia-mongo-api
+    build:
+      context: ./AcademiaMongoApi
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATA_MONGODB_HOST: mongodb
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_USERNAME: adminVlad
+      SPRING_DATA_MONGODB_PASSWORD: password
+      SPRING_DATA_MONGODB_DATABASE: academia
+      API_MARIADB_URL: http://academia-api:8080/api/academia/
+      JWT_SECRET: secret
+      GRPC_SERVER_HOST: grpc
+      GRPC_SERVER_PORT: 9090
+    networks:
+      - academia-network
+
+  grpc:
+    image: grpc-server
+    build:
+      context: ./GrpcAuth
+      dockerfile: Dockerfile
+    ports:
+      - "9090:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/academia
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+    networks:
+      - academia-network
+
+  mariadb:
+    image: mariadb:latest
+    container_name: academia-mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: academia
+      MYSQL_USER: academiadb-manager
+      MYSQL_PASSWORD: pass
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - academia-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: academia-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - academia-network
+
+networks:
+  academia-network:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  mongodb-data:
